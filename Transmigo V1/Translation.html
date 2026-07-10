@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Transmigo</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+
+    <header class="app-header">
+      <div class="header-content">
+      <h1>Transmigo</h1>
+      </div>
+    </header>
+
+    <main class="TranslationPg">
+      <div class="language-selector">
+      <select id="leftLang" class="lang-select">
+        <option value="en" selected>English</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="de">German</option>
+        <option value="ja">Japanese</option>
+        <option value="zh">Mandarin Chinese</option>
+     </select>
+
+        <button id="switchBtn" class="switch-btn">⇄</button>
+
+      <select id="rightLang" class="lang-select target-select">
+        <option value="en">English</option>
+        <option value="es" selected>Spanish</option>
+        <option value="fr">French</option>
+        <option value="de">German</option>
+        <option value="ja">Japanese</option>
+        <option value="zh">Mandarin Chinese</option>
+      </select>
+   </div>
+
+      <div class="translationBoxes">
+        <div class="translate-box">
+          <textarea placeholder="Type here..."></textarea>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="translate-box output-box">
+            <textarea placeholder="Translation here..." readonly></textarea>
+        </div>
+      </div>
+
+      <div class="actionBox">
+        <button class="save-btn">Save</button>
+      </div>
+    </main>
+  
+    <nav class="bottom-nav">
+<a href="#" class="nav-item active">Translate</a>
+<a href="#" class="nav-item">Review</a>
+<a href="#" class="nav-item">Decks</a>
+<a href="#" class="nav-item">Profiles</a>
+</nav>
+
+<script>
+const switchBtn = document.getElementById('switchBtn');
+const leftLang = document.getElementById('leftLang');
+const rightLang = document.getElementById('rightLang');
+
+switchBtn.addEventListener('click', () => {
+  const tempValue = leftLang.value;
+  leftLang.value = rightLang.value;
+  rightLang.value = tempValue;
+  });
+</script>
+  </body>
+</html>
