@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Transmigo</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+
+    <header class="app-header">
+      <h1>Transmigo</h1>
+    </header>
+
+    <main class="translationwrapper review-layout">
+
+      <div class="topgrouper">
+<div id="reviewDeckSelector" class="deck-selector">
+  <label for="reviewDeckSelect">Studying:</label>
+  <select id="reviewDeckSelect" class="deck-dropdown">
+    <option value="all">All Saved Decks</option>
+    <option value="spanish-101">Spanish Basics</option>
+    <option value="travel">Travel Vocab</option>
+  </select>
+</div>
+
+      <div class="flashcard-box">
+        <div class="flashcard" id="flashcard">
+          <div class="card-face card-front">
+            <p id="cardFrontText">Hello</p>
+            <span class="tap-hint">Tap or press Space to flip</span>
+          </div>
+          <div class="card-face card-back">
+            <p id="cardBackText">Hola</p>
+           </div>
+         </div>
+        </div>
+      </div>
+
+      <div class="action-bar-hub">
+        <button id="showAnswerBtn" class="answer-btn">Show Answer</button>
+
+      <div id="gradingOptions" class="diffculty-lvl hidden">
+       <button class="diffculty-btn again-btn">Again</button>
+        <button class="diffculty-btn hard-btn">Hard</button>
+       <button class="diffculty-btn good-btn">Good</button>
+        <button class="diffculty-btn easy-btn">Easy</button>
+      </div>
+   </div>
+    </main>
+  
+    <nav class="bottom-nav">
+      <a href="Translation.html" class="nav-item">Translate</a>
+      <a href="Review.html" class="nav-item active">Review</a>
+      <a href="decks.html" class="nav-item">Decks</a>
+      <a href="profile.html" class="nav-item">Profiles</a>
+    </nav>
+
+    <script>
+const card = document.getElementById('flashcard');
+const showAnswerBtn = document.getElementById('showAnswerBtn');
+const gradingOptions = document.getElementById('gradingOptions');
+
+function toggleFlip(){
+  card.classList.toggle('flipped');
+
+  if (card.classList.contains('flipped')) {
+    gradingOptions.classList.remove('hidden');
+    showAnswerBtn.classList.add('hidden');
+  } else {
+    gradingOptions.classList.add('hidden');
+    showAnswerBtn.classList.remove('hidden');
+     }
+    }
+
+  card.addEventListener('click', toggleFlip);
+  showAnswerBtn.addEventListener('click', toggleFlip);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+          e.preventDefault();
+          toggleFlip();
+        }
+      });
+    </script>
+  </body>
+</html>

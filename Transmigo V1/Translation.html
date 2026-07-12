@@ -38,13 +38,13 @@
 
       <div class="translationBoxes">
         <div class="translate-box">
-          <textarea placeholder="Type here..."></textarea>
+          <textarea id="sourceText" placeholder="Type here..."></textarea>
         </div>
 
         <div class="arrow">↓</div>
 
         <div class="translate-box output-box">
-            <textarea placeholder="Translation here..." readonly></textarea>
+            <textarea id="translatedText" placeholder="Translation here..." readonly></textarea>
         </div>
       </div>
 
@@ -55,21 +55,88 @@
   
     <nav class="bottom-nav">
 <a href="#" class="nav-item active">Translate</a>
-<a href="#" class="nav-item">Review</a>
-<a href="#" class="nav-item">Decks</a>
-<a href="#" class="nav-item">Profiles</a>
+<a href="Review.html" class="nav-item">Review</a>
+<a href="decks.html" class="nav-item">Decks</a>
+<a href="profile.html" class="nav-item">Profiles</a>
 </nav>
+
+<div id="saveModal" class="modal-overlay">
+  <div class="modal-content">
+    <h3>Create Flashcard</h3>
+    
+    <div class="modal-field">
+      <label>Front (Original Text)</label>
+      <input type="text" id="modalFront" readonly>
+    </div>
+
+    <div class="modal-field">
+      <label>Back (Translation)</label>
+      <input type="text" id="modalBack" readonly>
+    </div>
+
+    <div class="modal-actions">
+      <button id="cancelModal" class="cancel-btn">Cancel</button>
+      <button id="confirmSave" class="confirm-btn">Add to Decks</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const switchBtn = document.getElementById('switchBtn');
 const leftLang = document.getElementById('leftLang');
 const rightLang = document.getElementById('rightLang');
 
+const sourceText = document.getElementById('sourceText');
+const translatedText = document.getElementById('translatedText');
+
+const saveBtn = document.querySelector('.save-btn');
+const saveModal = document.getElementById('saveModal');
+const cancelModal = document.getElementById('cancelModal');
+const confirmSave = document.getElementById('confirmSave');
+
+const modalFront = document.getElementById('modalFront');
+const modalBack = document.getElementById('modalBack');
+
 switchBtn.addEventListener('click', () => {
   const tempValue = leftLang.value;
   leftLang.value = rightLang.value;
   rightLang.value = tempValue;
   });
+
+  saveBtn.addEventListener('click', () => {
+    if (sourceText.value.trim() === "" || translatedText.value.trim() === "") {
+    alert("Please enter some text to translate first!");
+    return;
+  }
+  modalFront.value = sourceText.value;
+  modalBack.value = translatedText.value;
+
+  saveModal.classList.add('active');
+});
+
+cancelModal.addEventListener('click', () => {
+  saveModal.classList.remove('active');
+});
+
+confirmSave.addEventListener('click', () => {
+  const currentCards = JSON.parse(localStorage.getItem('flashcards')) || [];
+
+  const newCard = {
+    front: modalFront.value,
+    back: modalBack.value,
+    timestamp: new Date().getTime()
+  };
+
+  currentCards.push(newCard);
+  localStorage.setItem('flashcards', JSON.stringify(currentCards));
+
+  saveModal.classList.remove('active');
+  sourceText.value = "";
+  translatedText.value = "";
+  
+  alert("Flashcard saved successfully!");
+});
+
 </script>
   </body>
 </html>
