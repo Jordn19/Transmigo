@@ -16,56 +16,60 @@
         
         <div class="deck-browser-group">
           
-          <div class="deck-panel">
-            <div class="panel-title">Decks</div>
-            <div class="scrollable-list">
-              <div class="deck-list">📂 Spanish 101</div>
-              <div class="deck-list">📂 Travel Phrases</div>
-              <div class="deck-list">📂 Verb Tenses</div>
+        <div class="deck-panel">
+            <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Decks</span>
+              <button id="addDeckBtn" style="background: none; border: none; color: #4a5568; cursor: pointer; font-size: 16px; padding: 0 5px;">➕</button>
             </div>
+            <div id="deckContainer" class="scrollable-list"></div>
           </div>
 
           <div class="card-list">
             <div class="panel-title">Card Browser</div>
-            <div class="scrollable-list">
-              <div class="deck-list">Where is the b...</div>
-              <div class="deck-list">How much does...</div>
-              <div class="deck-list">Good morning,...</div>
-              <div class="deck-list">Thank you ver...</div>
-            </div>
+            <div id="cardContainer" class="scrollable-list">
+              </div>
           </div>
 
         </div>
-
 
         <div class="deck-workshop"> 
-
-        <div class="workspace-header">
-          <h3>Card Editor</h3>
-          <button class="create-card-btn">+ New Card</button>
-        </div>
-
-        <form class="workshop-form">
-        <div class="form-field">
-          <label>Front</label>
-          <input type="text" value="Where is the bathroom?" placeholder="Enter front text...">
+          <div class="workspace-header">
+            <h3 id="editorTitle">Card Editor</h3>
+            <button class="create-card-btn" id="newCardBtn">+ New Card</button>
           </div>
+
+          <form class="workshop-form" id="workshopForm" onsubmit="return false;">
+          <div class="form-field">
+              <label>Deck Group</label>
+              <select id="cardDeckSelect" class="deck-dropdown" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; background: white;"></select>
+            </div>
+
+            <div class="form-field">
+              <label>Front</label>
+              <input type="text" id="cardFrontInput" placeholder="Enter front text...">
+            </div>
             <div class="form-field">
               <label>Back</label>
-              <input type="text" value="¿Dónde está el baño?" placeholder="Enter back translation...">
+              <input type="text" id="cardBackInput" placeholder="Enter back translation...">
             </div>
+
+            <div id="editorCustomFieldsContainer" style="margin-top: 10px;"></div>
+
+            <button type="button" id="editorAddCustomFieldBtn" style="width: 100%; padding: 6px; margin: 10px 0; background: #e2e8f0; border: 1px dashed #cbd5e1; border-radius: 4px; cursor: pointer; font-size: 13px; color: #4a5568;">
+              ➕ Add Custom Field (Notes, Pinyin, etc.)
+            </button>
+
 
             <div class="workspace-actions">
-              <button type="submit" class="workspace-save-btn">Save Changes</button>
-              <button type="button" class="workspace-delete-btn">Delete Card</button>
+              <button type="button" id="saveCardBtn" class="workspace-save-btn">Save Changes</button>
+              <button type="button" id="deleteCardBtn" class="workspace-delete-btn">Delete Card</button>
             </div>
-            </form>
+          </form>
 
           <div class="workspace-footer">
-            <span>Deck: Travel Phrases</span>
-            <span>ID: card_09x8821</span>
+            <span id="footerDeckInfo">Deck: None</span>
+            <span id="footerIdInfo">ID: New</span>
           </div>
-
         </div>
 
       </div>
@@ -78,5 +82,247 @@
       <a href="profile.html" class="nav-item">Profiles</a>
     </nav>
 
+    <script src="db.js"></script>
+
+    <script>
+const deckContainer = document.getElementById('deckContainer');
+      const cardContainer = document.getElementById('cardContainer');
+      
+      const cardDeckSelect = document.getElementById('cardDeckSelect');
+      const cardFrontInput = document.getElementById('cardFrontInput');
+      const cardBackInput = document.getElementById('cardBackInput');
+      const editorCustomFieldsContainer = document.getElementById('editorCustomFieldsContainer');
+      const editorAddCustomFieldBtn = document.getElementById('editorAddCustomFieldBtn');
+      const addDeckBtn = document.getElementById('addDeckBtn');
+      
+      const saveCardBtn = document.getElementById('saveCardBtn');
+      const deleteCardBtn = document.getElementById('deleteCardBtn');
+      const newCardBtn = document.getElementById('newCardBtn');
+      
+      const footerDeckInfo = document.getElementById('footerDeckInfo');
+      const footerIdInfo = document.getElementById('footerIdInfo');
+      const editorTitle = document.getElementById('editorTitle');
+
+      let selectedDeckName = 'all';
+      let activeCardId = null;
+
+      let runtimeCustomDecks = [];
+
+      function renderDashboard() {
+        renderDecksList();
+        populateEditorDeckDropdown();
+        renderCardsList();
+      }
+
+      function getMasterDecksList() {
+        const structuralDecks = getDecksList(); 
+        runtimeCustomDecks.forEach(d => {
+          if (!structuralDecks.includes(d)) structuralDecks.push(d);
+        });
+        return structuralDecks;
+      }
+
+      function renderDecksList() {
+        const deckNames = getMasterDecksList();
+        deckContainer.innerHTML = '';
+
+        deckNames.forEach(deck => {
+          const div = document.createElement('div');
+          div.className = `deck-list ${selectedDeckName === deck ? 'active-item' : ''}`;
+          div.textContent = deck === 'all' ? '📂 All Saved Decks' : `📂 ${deck.charAt(0).toUpperCase() + deck.slice(1)}`;
+          
+          div.addEventListener('click', () => {
+            selectedDeckName = deck;
+            renderDashboard();
+          });
+          deckContainer.appendChild(div);
+        });
+      }
+
+      function populateEditorDeckDropdown() {
+        const deckNames = getMasterDecksList();
+        const currentSelection = cardDeckSelect.value;
+        cardDeckSelect.innerHTML = '';
+
+        deckNames.forEach(deck => {
+          if (deck === 'all') return; 
+          const opt = document.createElement('option');
+          opt.value = deck;
+          opt.textContent = deck.charAt(0).toUpperCase() + deck.slice(1);
+          cardDeckSelect.appendChild(opt);
+        });
+
+        if (currentSelection && [...cardDeckSelect.options].some(o => o.value === currentSelection)) {
+          cardDeckSelect.value = currentSelection;
+        }
+      }
+
+      function renderCardsList() {
+        const allCards = getCards();
+        cardContainer.innerHTML = '';
+
+        const filteredCards = selectedDeckName === 'all' 
+          ? allCards 
+          : allCards.filter(c => c.deck.toLowerCase().trim() === selectedDeckName.toLowerCase().trim());
+
+        if (filteredCards.length === 0) {
+          cardContainer.innerHTML = '<div style="padding:10px; font-size:12px; color:#a0aec0;">No cards found</div>';
+          return;
+        }
+
+        filteredCards.forEach(card => {
+          const div = document.createElement('div');
+          div.className = `deck-list ${activeCardId === card.id ? 'active-item' : ''}`;
+
+          let contentHtml = `<div style="font-weight: 500;">${card.front}</div>`;
+          if (card.customFields && Object.keys(card.customFields).length > 0) {
+            contentHtml += `<div style="font-size: 11px; color: #718096; margin-top: 2px;">`;
+            Object.entries(card.customFields).forEach(([label, value]) => {
+              contentHtml += `<span style="background: #edf2f7; padding: 2px 4px; border-radius: 3px; margin-right: 4px;">${label}: ${value}</span>`;
+            });
+            contentHtml += `</div>`;
+          }
+          div.innerHTML = contentHtml;
+          
+          div.addEventListener('click', () => {
+            loadCardIntoEditor(card);
+          });
+          cardContainer.appendChild(div);
+        });
+      }
+
+      function spawnCustomFieldRow(label = '', value = '') {
+        const fieldWrapper = document.createElement('div');
+        fieldWrapper.className = 'form-field-custom-row';
+        fieldWrapper.style.display = 'flex';
+        fieldWrapper.style.gap = '5px';
+        fieldWrapper.style.marginTop = '8px';
+
+        fieldWrapper.innerHTML = `
+          <input type="text" placeholder="Label (e.g., Pinyin)" class="editor-custom-label" value="${label}" style="width: 35%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1;">
+          <input type="text" placeholder="Value..." class="editor-custom-value" value="${value}" style="width: 55%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1;">
+          <button type="button" class="editor-remove-field-btn" style="width: 10%; background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; border-radius: 4px; cursor: pointer;">✕</button>
+        `;
+
+        fieldWrapper.querySelector('.editor-remove-field-btn').addEventListener('click', () => {
+          fieldWrapper.remove();
+        });
+
+        editorCustomFieldsContainer.appendChild(fieldWrapper);
+      }
+
+      function loadCardIntoEditor(card) {
+        activeCardId = card.id;
+        cardDeckSelect.value = card.deck || 'general';
+        cardFrontInput.value = card.front;
+        cardBackInput.value = card.back;
+
+        editorCustomFieldsContainer.innerHTML = '';
+        if (card.customFields) {
+          Object.entries(card.customFields).forEach(([label, value]) => {
+            spawnCustomFieldRow(label, value);
+          });
+        }
+        
+        editorTitle.textContent = "Edit Card";
+        footerDeckInfo.textContent = `Deck: ${card.deck}`;
+        footerIdInfo.textContent = `ID: ${card.id}`;
+        
+        renderCardsList();
+      }
+
+      function clearEditor() {
+        activeCardId = null;
+        cardDeckSelect.value = selectedDeckName === 'all' ? 'general' : selectedDeckName;
+        cardFrontInput.value = '';
+        cardBackInput.value = '';
+        
+        editorCustomFieldsContainer.innerHTML = '';
+
+        editorTitle.textContent = "New Card";
+        footerDeckInfo.textContent = `Deck: None`;
+        footerIdInfo.textContent = `ID: New`;
+        
+        renderCardsList();
+      }
+
+      editorAddCustomFieldBtn.addEventListener('click', () => {
+        spawnCustomFieldRow('', '');
+      });
+
+      addDeckBtn.addEventListener('click', () => {
+        const newDeckName = prompt("Enter a name for your new deck group:").trim().toLowerCase();
+        if (!newDeckName) return;
+        
+        if (getMasterDecksList().includes(newDeckName)) {
+          alert("A deck with that name already exists!");
+          return;
+        }
+
+        runtimeCustomDecks.push(newDeckName);
+        selectedDeckName = newDeckName;
+        cardDeckSelect.value = newDeckName;
+        renderDashboard();
+      });
+
+      saveCardBtn.addEventListener('click', () => {
+        const frontVal = cardFrontInput.value.trim();
+        const backVal = cardBackInput.value.trim();
+        const deckVal = cardDeckSelect.value;
+
+        if (!frontVal || !backVal) {
+          alert('Please fill out both the front and back parameters!');
+          return;
+        }
+
+        const updatedCustomFields = {};
+        const labels = document.querySelectorAll('.editor-custom-label');
+        const values = document.querySelectorAll('.editor-custom-value');
+        
+        labels.forEach((labelEl, idx) => {
+          const key = labelEl.value.trim();
+          const val = values[idx].value.trim();
+          if (key && val) {
+            updatedCustomFields[key] = val;
+          }
+        });
+
+        const payload = {
+          front: frontVal,
+          back: backVal,
+          deck: deckVal,
+          customFields: updatedCustomFields
+        };
+
+        if (activeCardId) {
+          payload.id = activeCardId;
+        }
+
+        saveCard(payload);
+        alert('Card database synchronized successfully!');
+        
+        selectedDeckName = deckVal;
+        clearEditor();
+        renderDashboard();
+      });
+
+      deleteCardBtn.addEventListener('click', () => {
+        if (!activeCardId) {
+          clearEditor();
+          return;
+        }
+
+        if (confirm('Are you sure you want to permanently remove this card?')) {
+          deleteCardById(activeCardId);
+          clearEditor();
+          renderDashboard();
+        }
+      });
+
+      newCardBtn.addEventListener('click', clearEditor);
+
+      renderDashboard();
+      clearEditor();
+    </script>
   </body>
 </html>

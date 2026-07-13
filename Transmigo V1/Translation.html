@@ -9,32 +9,32 @@
 
     <header class="app-header">
       <div class="header-content">
-      <h1>Transmigo</h1>
+        <h1>Transmigo</h1>
       </div>
     </header>
 
     <main class="TranslationPg">
       <div class="language-selector">
-      <select id="leftLang" class="lang-select">
-        <option value="en" selected>English</option>
-        <option value="es">Spanish</option>
-        <option value="fr">French</option>
-        <option value="de">German</option>
-        <option value="ja">Japanese</option>
-        <option value="zh">Mandarin Chinese</option>
-     </select>
+        <select id="leftLang" class="lang-select">
+          <option value="en" selected>English</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="ja">Japanese</option>
+          <option value="zh">Mandarin Chinese</option>
+        </select>
 
         <button id="switchBtn" class="switch-btn">⇄</button>
 
-      <select id="rightLang" class="lang-select target-select">
-        <option value="en">English</option>
-        <option value="es" selected>Spanish</option>
-        <option value="fr">French</option>
-        <option value="de">German</option>
-        <option value="ja">Japanese</option>
-        <option value="zh">Mandarin Chinese</option>
-      </select>
-   </div>
+        <select id="rightLang" class="lang-select target-select">
+          <option value="en">English</option>
+          <option value="es" selected>Spanish</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="ja">Japanese</option>
+          <option value="zh">Mandarin Chinese</option>
+        </select>
+      </div>
 
       <div class="translationBoxes">
         <div class="translate-box">
@@ -44,7 +44,7 @@
         <div class="arrow">↓</div>
 
         <div class="translate-box output-box">
-            <textarea id="translatedText" placeholder="Translation here..." readonly></textarea>
+          <textarea id="translatedText" placeholder="Translation here..." readonly></textarea>
         </div>
       </div>
 
@@ -54,16 +54,24 @@
     </main>
   
     <nav class="bottom-nav">
-<a href="#" class="nav-item active">Translate</a>
-<a href="Review.html" class="nav-item">Review</a>
-<a href="decks.html" class="nav-item">Decks</a>
-<a href="profile.html" class="nav-item">Profiles</a>
-</nav>
+      <a href="#" class="nav-item active">Translate</a>
+      <a href="Review.html" class="nav-item">Review</a>
+      <a href="decks.html" class="nav-item">Decks</a>
+      <a href="profile.html" class="nav-item">Profiles</a>
+    </nav>
 
 <div id="saveModal" class="modal-overlay">
   <div class="modal-content">
     <h3>Create Flashcard</h3>
     
+    <div class="modal-field">
+      <label>Choose Deck</label>
+      <select id="modalDeckSelect" class="deck-dropdown" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px;">
+        </select>
+      <input type="text" id="modalNewDeckInput" placeholder="Or type a new deck name..." style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; display: none;">
+      <button id="toggleNewDeckBtn" style="font-size: 11px; background: none; border: none; color: #4a5568; cursor: pointer; text-decoration: underline; padding: 0; margin-top: 2px;">+ Create New Deck</button>
+    </div>
+
     <div class="modal-field">
       <label>Front (Original Text)</label>
       <input type="text" id="modalFront" readonly>
@@ -74,6 +82,13 @@
       <input type="text" id="modalBack" readonly>
     </div>
 
+<div id="customFieldsContainer" style="margin-top: 10px;">
+      </div>
+
+    <button type="button" id="addCustomFieldBtn" style="width: 100%; padding: 6px; margin: 10px 0; background: #e2e8f0; border: 1px dashed #cbd5e1; border-radius: 4px; cursor: pointer; font-size: 13px; color: #4a5568;">
+      ➕ Add Custom Field (Notes, Pinyin, etc.)
+    </button>
+
     <div class="modal-actions">
       <button id="cancelModal" class="cancel-btn">Cancel</button>
       <button id="confirmSave" class="confirm-btn">Add to Decks</button>
@@ -81,7 +96,9 @@
   </div>
 </div>
 
-<script>
+    <script src="db.js"></script>
+
+    <script>
 const switchBtn = document.getElementById('switchBtn');
 const leftLang = document.getElementById('leftLang');
 const rightLang = document.getElementById('rightLang');
@@ -97,21 +114,141 @@ const confirmSave = document.getElementById('confirmSave');
 const modalFront = document.getElementById('modalFront');
 const modalBack = document.getElementById('modalBack');
 
+const modalDeckSelect = document.getElementById('modalDeckSelect');
+const modalNewDeckInput = document.getElementById('modalNewDeckInput');
+const toggleNewDeckBtn = document.getElementById('toggleNewDeckBtn');
+
+const customFieldsContainer = document.getElementById('customFieldsContainer');
+const addCustomFieldBtn = document.getElementById('addCustomFieldBtn');
+
+const savedLeft = localStorage.getItem('transmigo_leftLang');
+const savedRight = localStorage.getItem('transmigo_rightLang');
+
+if (savedLeft) leftLang.value = savedLeft;
+if (savedRight) rightLang.value = savedRight;
+
+let debounceTimer;
+sourceText.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    performTranslation();
+  }, 600);
+});
+
+async function performTranslation() {
+  const text = sourceText.value.trim();
+  if (!text) {
+    translatedText.value = "";
+    return;
+  }
+
+  translatedText.value = "Translating...";
+  const from = leftLang.value;
+  const to = rightLang.value;
+
+  try {
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`);
+    const data = await res.json();
+    if (data.responseData) {
+      translatedText.value = data.responseData.translatedText;
+    } else {
+      translatedText.value = "[Translation processing error]";
+    }
+  } catch (err) {
+    console.error("Network issue:", err);
+    translatedText.value = "[Connection Error]";
+  }
+}
+
 switchBtn.addEventListener('click', () => {
   const tempValue = leftLang.value;
   leftLang.value = rightLang.value;
   rightLang.value = tempValue;
-  });
 
-  saveBtn.addEventListener('click', () => {
-    if (sourceText.value.trim() === "" || translatedText.value.trim() === "") {
+  localStorage.setItem('transmigo_leftLang', leftLang.value);
+  localStorage.setItem('transmigo_rightLang', rightLang.value);
+
+  if (sourceText.value.trim() !== "") {
+    performTranslation();
+  }
+});
+
+leftLang.addEventListener('change', () => { 
+  localStorage.setItem('transmigo_leftLang', leftLang.value);
+  if(sourceText.value) performTranslation(); 
+});
+
+rightLang.addEventListener('change', () => { 
+  localStorage.setItem('transmigo_rightLang', rightLang.value);
+  if(sourceText.value) performTranslation(); 
+});
+
+saveBtn.addEventListener('click', () => {
+  if (sourceText.value.trim() === "" || translatedText.value.trim() === "" || translatedText.value === "Translating...") {
     alert("Please enter some text to translate first!");
     return;
   }
+  
   modalFront.value = sourceText.value;
   modalBack.value = translatedText.value;
+  
+  customFieldsContainer.innerHTML = '';
+
+  modalDeckSelect.innerHTML = '';
+  modalNewDeckInput.value = '';
+  modalNewDeckInput.style.display = 'none';
+  modalDeckSelect.style.display = 'block';
+  toggleNewDeckBtn.textContent = '+ Create New Deck';
+  
+  const existingDecks = typeof getDecksList === 'function' ? getDecksList() : ['general'];
+  existingDecks.forEach(deck => {
+    if (deck === 'all') return;
+    const opt = document.createElement('option');
+    opt.value = deck;
+    opt.textContent = deck.charAt(0).toUpperCase() + deck.slice(1);
+    modalDeckSelect.appendChild(opt);
+  });
+  
+  if (modalDeckSelect.children.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = 'general';
+    opt.textContent = 'General';
+    modalDeckSelect.appendChild(opt);
+  }
 
   saveModal.classList.add('active');
+});
+
+toggleNewDeckBtn.addEventListener('click', () => {
+  if (modalNewDeckInput.style.display === 'none') {
+    modalNewDeckInput.style.display = 'block';
+    modalDeckSelect.style.display = 'none';
+    toggleNewDeckBtn.textContent = '« Choose Existing Deck';
+  } else {
+    modalNewDeckInput.style.display = 'none';
+    modalDeckSelect.style.display = 'block';
+    toggleNewDeckBtn.textContent = '+ Create New Deck';
+  }
+});
+
+addCustomFieldBtn.addEventListener('click', () => {
+  const fieldWrapper = document.createElement('div');
+  fieldWrapper.className = 'modal-field';
+  fieldWrapper.style.marginBottom = '10px';
+  fieldWrapper.style.display = 'flex';
+  fieldWrapper.style.gap = '5px';
+
+  fieldWrapper.innerHTML = `
+    <input type="text" placeholder="Field Label (e.g., Pinyin)" class="custom-field-label" style="width: 35%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1;">
+    <input type="text" placeholder="Value..." class="custom-field-value" style="width: 55%; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1;">
+    <button type="button" class="remove-field-btn" style="width: 10%; background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; border-radius: 4px; cursor: pointer;">✕</button>
+  `;
+
+  fieldWrapper.querySelector('.remove-field-btn').addEventListener('click', () => {
+    fieldWrapper.remove();
+  });
+
+  customFieldsContainer.appendChild(fieldWrapper);
 });
 
 cancelModal.addEventListener('click', () => {
@@ -119,24 +256,41 @@ cancelModal.addEventListener('click', () => {
 });
 
 confirmSave.addEventListener('click', () => {
-  const currentCards = JSON.parse(localStorage.getItem('flashcards')) || [];
+  let finalDeckName = 'general';
+  
+  if (modalNewDeckInput.style.display === 'block') {
+    const customName = modalNewDeckInput.value.trim().toLowerCase();
+    if (customName) finalDeckName = customName;
+  } else {
+    finalDeckName = modalDeckSelect.value;
+  }
 
-  const newCard = {
+const extraFields = {};
+  const labels = document.querySelectorAll('.custom-field-label');
+  const values = document.querySelectorAll('.custom-field-value');
+  
+  labels.forEach((labelEl, idx) => {
+    const key = labelEl.value.trim();
+    const val = values[idx].value.trim();
+    if (key && val) {
+      extraFields[key] = val;
+    }
+  });
+
+  saveCard({
     front: modalFront.value,
     back: modalBack.value,
+    deck: finalDeckName,
+    customFields: extraFields,
     timestamp: new Date().getTime()
-  };
-
-  currentCards.push(newCard);
-  localStorage.setItem('flashcards', JSON.stringify(currentCards));
+  });
 
   saveModal.classList.remove('active');
   sourceText.value = "";
   translatedText.value = "";
   
-  alert("Flashcard saved successfully!");
+  alert(`Flashcard added to deck "${finalDeckName}" successfully!`);
 });
-
-</script>
+    </script>
   </body>
 </html>

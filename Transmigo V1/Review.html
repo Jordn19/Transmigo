@@ -14,38 +14,36 @@
     <main class="translationwrapper review-layout">
 
       <div class="topgrouper">
-<div id="reviewDeckSelector" class="deck-selector">
-  <label for="reviewDeckSelect">Studying:</label>
-  <select id="reviewDeckSelect" class="deck-dropdown">
-    <option value="all">All Saved Decks</option>
-    <option value="spanish-101">Spanish Basics</option>
-    <option value="travel">Travel Vocab</option>
-  </select>
-</div>
-
-      <div class="flashcard-box">
-        <div class="flashcard" id="flashcard">
-          <div class="card-face card-front">
-            <p id="cardFrontText">Hello</p>
-            <span class="tap-hint">Tap or press Space to flip</span>
-          </div>
-          <div class="card-face card-back">
-            <p id="cardBackText">Hola</p>
-           </div>
-         </div>
+        <div id="reviewDeckSelector" class="deck-selector">
+          <label for="reviewDeckSelect">Studying:</label>
+          <select id="reviewDeckSelect" class="deck-dropdown">
+            <option value="all">All Saved Decks</option>
+          </select>
         </div>
-      </div>
+
+        <div class="flashcard-box">
+          <div class="flashcard" id="flashcard">
+            <div class="card-face card-front">
+              <p id="cardFrontText">No cards available</p>
+              <span class="tap-hint" id="tapHint">Tap or press Space to flip</span>
+            </div>
+            <div class="card-face card-back">
+              <p id="cardBackText">Translate text to create cards!</p>
+              <div id="cardCustomFieldsDisplay" style="margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 10px; font-size: 14px; text-align: left; color: #4a5568;"></div>
+            </div>
+          </div>
+        </div>
 
       <div class="action-bar-hub">
         <button id="showAnswerBtn" class="answer-btn">Show Answer</button>
 
-      <div id="gradingOptions" class="diffculty-lvl hidden">
-       <button class="diffculty-btn again-btn">Again</button>
-        <button class="diffculty-btn hard-btn">Hard</button>
-       <button class="diffculty-btn good-btn">Good</button>
-        <button class="diffculty-btn easy-btn">Easy</button>
+        <div id="gradingOptions" class="diffculty-lvl hidden">
+          <button class="diffculty-btn again-btn" data-grade="again">Again</button>
+          <button class="diffculty-btn hard-btn" data-grade="hard">Hard</button>
+          <button class="diffculty-btn good-btn" data-grade="good">Good</button>
+          <button class="diffculty-btn easy-btn" data-grade="easy">Easy</button>
+        </div>
       </div>
-   </div>
     </main>
   
     <nav class="bottom-nav">
@@ -55,32 +53,158 @@
       <a href="profile.html" class="nav-item">Profiles</a>
     </nav>
 
+    <script src="db.js"></script>
+
     <script>
-const card = document.getElementById('flashcard');
-const showAnswerBtn = document.getElementById('showAnswerBtn');
-const gradingOptions = document.getElementById('gradingOptions');
+      const card = document.getElementById('flashcard');
+      const showAnswerBtn = document.getElementById('showAnswerBtn');
+      const gradingOptions = document.getElementById('gradingOptions');
+      const deckSelect = document.getElementById('reviewDeckSelect');
+      
+      const cardFrontText = document.getElementById('cardFrontText');
+      const cardBackText = document.getElementById('cardBackText');
+      const tapHint = document.getElementById('tapHint');
+      const cardCustomFieldsDisplay = document.getElementById('cardCustomFieldsDisplay');
 
-function toggleFlip(){
-  card.classList.toggle('flipped');
+      let studyQueue = [];
+      let currentCardIndex = 0;
+      let hasFlippedFirstCard = false;
 
-  if (card.classList.contains('flipped')) {
-    gradingOptions.classList.remove('hidden');
-    showAnswerBtn.classList.add('hidden');
-  } else {
-    gradingOptions.classList.add('hidden');
-    showAnswerBtn.classList.remove('hidden');
-     }
+      function initReview() {
+        populateDeckDropdown();
+        buildStudyQueue();
+        showCurrentCard();
+      }
+
+      function populateDeckDropdown() {
+        const uniqueDecks = getDecksList(); 
+        deckSelect.innerHTML = '';
+        
+        uniqueDecks.forEach(deckName => {
+          const opt = document.createElement('option');
+          opt.value = deckName;
+          opt.textContent = deckName === 'all' ? 'All Saved Decks' : deckName.charAt(0).toUpperCase() + deckName.slice(1);
+          deckSelect.appendChild(opt);
+        });
+      }
+
+      function buildStudyQueue() {
+        const allCards = getCards();
+        const selectedDeck = deckSelect.value;
+
+        if (selectedDeck === 'all') {
+          studyQueue = allCards;
+        } else {
+          studyQueue = allCards.filter(c => c.deck.toLowerCase().trim() === selectedDeck.toLowerCase().trim());
+        }
+        
+        currentCardIndex = 0;
+      }
+
+      function showCurrentCard() {
+        card.classList.remove('flipped');
+        gradingOptions.classList.add('hidden');
+        
+        if (studyQueue.length === 0 || currentCardIndex >= studyQueue.length) {
+          cardFrontText.textContent = "Deck Complete! 🎉";
+          cardBackText.textContent = "";
+          cardCustomFieldsDisplay.innerHTML = "";
+          tapHint.classList.add('hidden');
+          showAnswerBtn.classList.add('hidden');
+          return;
+        }
+
+        if (hasFlippedFirstCard) {
+          tapHint.classList.add('hidden');
+        } else {
+          tapHint.classList.remove('hidden');
+        }
+        showAnswerBtn.classList.remove('hidden');
+
+        const activeCard = studyQueue[currentCardIndex];
+        cardFrontText.textContent = activeCard.front;
+        cardBackText.textContent = activeCard.back;
+
+      cardCustomFieldsDisplay.innerHTML = "";
+        if (activeCard.customFields && Object.keys(activeCard.customFields).length > 0) {
+          Object.entries(activeCard.customFields).forEach(([label, value]) => {
+            const fieldLine = document.createElement('div');
+            fieldLine.style.marginBottom = '4px';
+            fieldLine.innerHTML = `<strong>${label}:</strong> ${value}`;
+            cardCustomFieldsDisplay.appendChild(fieldLine);
+          });
+        }
+      }
+
+      function toggleFlip() {
+        if (studyQueue.length === 0 || currentCardIndex >= studyQueue.length) return;
+
+        card.classList.toggle('flipped');
+
+        if (card.classList.contains('flipped')) {
+          gradingOptions.classList.remove('hidden');
+          showAnswerBtn.classList.add('hidden');
+
+        if (!hasFlippedFirstCard) {
+         hasFlippedFirstCard = true;
     }
+        } else {
+          gradingOptions.classList.add('hidden');
+          showAnswerBtn.classList.remove('hidden');
+        }
+      }
 
-  card.addEventListener('click', toggleFlip);
-  showAnswerBtn.addEventListener('click', toggleFlip);
+      function gradeCard(rating) {
+        const activeCard = studyQueue[currentCardIndex];
+        
+        if (rating === 'again') {
+          activeCard.interval = 0;
+          activeCard.state = 'learning';
+        } else if (rating === 'hard') {
+          activeCard.interval = Math.max(1, activeCard.interval * 1.2);
+          activeCard.state = 'young';
+        } else if (rating === 'good') {
+          activeCard.interval = activeCard.interval === 0 ? 1 : Math.ceil(activeCard.interval * 2.5);
+          activeCard.state = 'young';
+        } else if (rating === 'easy') {
+          activeCard.interval = activeCard.interval === 0 ? 3 : Math.ceil(activeCard.interval * 4);
+          activeCard.state = 'mature';
+        }
 
-  window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
+        activeCard.dueDate = Date.now() + (activeCard.interval * 24 * 60 * 60 * 1000);
+        
+        saveCard(activeCard);
+
+       logReviewEvent();
+
+        currentCardIndex++;
+        showCurrentCard();
+      }
+
+      card.addEventListener('click', toggleFlip);
+      showAnswerBtn.addEventListener('click', toggleFlip);
+
+      deckSelect.addEventListener('change', () => {
+        buildStudyQueue();
+        showCurrentCard();
+      });
+
+      document.querySelectorAll('.diffculty-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const score = btn.getAttribute('data-grade');
+          gradeCard(score);
+        });
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
           e.preventDefault();
           toggleFlip();
         }
       });
+
+      initReview();
     </script>
   </body>
 </html>

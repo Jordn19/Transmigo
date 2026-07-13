@@ -308,6 +308,16 @@ body {
     display: none !important;
 }
 
+
+
+
+
+
+
+
+
+
+
 .review-layout {
     display: flex;
     flex-direction: column;
@@ -446,6 +456,13 @@ body {
 .hard-btn  { color: #dd6b20; border-bottom: 3px solid #dd6b20; }
 .good-btn  { color: #3182ce; border-bottom: 3px solid #3182ce; }
 .easy-btn  { color: #38a169; border-bottom: 3px solid #38a169; }
+
+
+
+
+
+
+
 
 
 
@@ -682,6 +699,15 @@ body {
         padding: 50px;
     }
 }
+
+
+
+
+
+
+
+
+
 
 
 .profile-layout-wrapper {
